@@ -1,6 +1,9 @@
 package uit.carbon_shop.service;
 
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +25,7 @@ import uit.carbon_shop.util.ReferencedWarning;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
@@ -30,18 +34,7 @@ public class ProjectService {
     private final ProjectMapper projectMapper;
     private final OrderRepository orderRepository;
     private final ProjectReviewRepository projectReviewRepository;
-
-    public ProjectService(final ProjectRepository projectRepository,
-            final CompanyRepository companyRepository, final AppUserRepository appUserRepository,
-            final ProjectMapper projectMapper, final OrderRepository orderRepository,
-            final ProjectReviewRepository projectReviewRepository) {
-        this.projectRepository = projectRepository;
-        this.companyRepository = companyRepository;
-        this.appUserRepository = appUserRepository;
-        this.projectMapper = projectMapper;
-        this.orderRepository = orderRepository;
-        this.projectReviewRepository = projectReviewRepository;
-    }
+    private final RedissonClient redissonClient;
 
     public Page<ProjectDTO> findAll(final String filter, final Pageable pageable) {
         Page<Project> page;
@@ -75,7 +68,8 @@ public class ProjectService {
                 pageable, page.getTotalElements());
     }
 
-    public Page<ProjectDTO> findAllByOwnerAndStatus(final Long ownerCompany, ProjectStatus status, String filter, final Pageable pageable) {
+    public Page<ProjectDTO> findAllByOwnerAndStatus(final Long ownerCompany, ProjectStatus status, String filter,
+            final Pageable pageable) {
         final Page<Project> page =
                 StringUtils.hasText(filter) ? projectRepository.findByOwnerCompany_IdAndStatusAndNameContainsIgnoreCase(
                         ownerCompany, status, filter, pageable)
@@ -88,9 +82,10 @@ public class ProjectService {
     }
 
     public Page<ProjectDTO> findByStatus(ProjectStatus status, String filter, Pageable pageable) {
-        final Page<Project> page = StringUtils.hasText(filter) ? projectRepository.findByStatusAndNameContainsIgnoreCase(
-                status, filter, pageable)
-                : projectRepository.findByStatus(status, pageable);
+        final Page<Project> page =
+                StringUtils.hasText(filter) ? projectRepository.findByStatusAndNameContainsIgnoreCase(
+                        status, filter, pageable)
+                        : projectRepository.findByStatus(status, pageable);
         return new PageImpl<>(page.getContent()
                 .stream()
                 .map(project -> projectMapper.updateProjectDTO(project, new ProjectDTO()))
@@ -98,8 +93,10 @@ public class ProjectService {
                 pageable, page.getTotalElements());
     }
 
-    public Page<ProjectDTO> findByStatusButNotCompany(ProjectStatus status, Long companyId, String filter, Pageable pageable) {
-        final Page<Project> page = StringUtils.hasText(filter) ? projectRepository.findByOwnerCompany_IdNotAndStatusAndNameContainsIgnoreCase(
+    public Page<ProjectDTO> findByStatusButNotCompany(ProjectStatus status, Long companyId, String filter,
+            Pageable pageable) {
+        final Page<Project> page = StringUtils.hasText(filter)
+                ? projectRepository.findByOwnerCompany_IdNotAndStatusAndNameContainsIgnoreCase(
                 companyId, status, filter, pageable)
                 : projectRepository.findByOwnerCompany_IdNotAndStatus(companyId, status, pageable);
         return new PageImpl<>(page.getContent()
@@ -110,9 +107,10 @@ public class ProjectService {
     }
 
     public Page<ProjectDTO> findAllButNotCompany(Long companyId, String filter, Pageable pageable) {
-        final Page<Project> page = StringUtils.hasText(filter) ? projectRepository.findByOwnerCompany_IdNotAndNameContainsIgnoreCase(
-                companyId, filter, pageable)
-                : projectRepository.findByOwnerCompany_IdNot(companyId, pageable);
+        final Page<Project> page =
+                StringUtils.hasText(filter) ? projectRepository.findByOwnerCompany_IdNotAndNameContainsIgnoreCase(
+                        companyId, filter, pageable)
+                        : projectRepository.findByOwnerCompany_IdNot(companyId, pageable);
         return new PageImpl<>(page.getContent()
                 .stream()
                 .map(project -> projectMapper.updateProjectDTO(project, new ProjectDTO()))
@@ -138,6 +136,41 @@ public class ProjectService {
                 .orElseThrow(NotFoundException::new);
         projectMapper.updateProject(projectDTO, project, companyRepository, appUserRepository);
         projectRepository.save(project);
+    }
+
+    public void updateStatus(final Long projectId, final ProjectStatus status) {
+        RLock projectLock = redissonClient.getLock("PROJECT_LOCK:" + projectId);
+        projectLock.lock();
+        try {
+            final Project project = projectRepository.findById(projectId)
+                    .orElseThrow(NotFoundException::new);
+            if (!project.getStatus().canUpdateTo(status)) {
+                throw new IllegalArgumentException(
+                        "Cannot update status from " + project.getStatus() + " to " + status);
+            }
+            project.setStatus(status);
+            projectRepository.save(project);
+        } finally {
+            projectLock.unlock();
+        }
+    }
+
+    public void approve(final Long projectId, final Long approveBy) {
+        RLock projectLock = redissonClient.getLock("PROJECT_LOCK:" + projectId);
+        projectLock.lock();
+        try {
+            final Project project = projectRepository.findById(projectId)
+                    .orElseThrow(NotFoundException::new);
+            if (!project.getStatus().canUpdateTo(ProjectStatus.APPROVED)) {
+                throw new IllegalArgumentException(
+                        "Cannot update status from " + project.getStatus() + " to " + ProjectStatus.APPROVED);
+            }
+            project.setStatus(ProjectStatus.APPROVED);
+            project.setAuditBy(appUserRepository.findById(approveBy).orElseThrow(NotFoundException::new));
+            projectRepository.save(project);
+        } finally {
+            projectLock.unlock();
+        }
     }
 
     public void delete(final Long projectId) {

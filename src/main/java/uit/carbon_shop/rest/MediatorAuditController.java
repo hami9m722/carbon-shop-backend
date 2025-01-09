@@ -3,7 +3,6 @@ package uit.carbon_shop.rest;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
-import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -59,19 +58,15 @@ public class MediatorAuditController {
     @PatchMapping("/order/{orderId}/process")
     public ResponseEntity<OrderDTO> startProcessOrder(
             @PathVariable(name = "orderId") final Long orderId) {
-        var order = orderService.get(orderId);
-        order.setStatus(OrderStatus.PROCESSING);
-        orderService.update(orderId, order);
-        return ResponseEntity.ok(order);
+        orderService.updateStatus(orderId, OrderStatus.PROCESSING);
+        return ResponseEntity.ok(orderService.get(orderId));
     }
 
     @PatchMapping("/order/{orderId}/cancel")
     public ResponseEntity<OrderDTO> cancelProcessOrder(
             @PathVariable(name = "orderId") final Long orderId) {
-        var order = orderService.get(orderId);
-        order.setStatus(OrderStatus.CANCELLED);
-        orderService.update(orderId, order);
-        return ResponseEntity.ok(order);
+        orderService.updateStatus(orderId, OrderStatus.CANCELLED);
+        return ResponseEntity.ok(orderService.get(orderId));
     }
 
     @PatchMapping("/order/{orderId}/done")
@@ -79,16 +74,8 @@ public class MediatorAuditController {
             @PathVariable(name = "orderId") final Long orderId,
             @RequestBody @Valid MediatorDoneOrderDTO mediatorDoneOrderDTO
     ) {
-        var order = orderService.get(orderId);
-        order.setStatus(OrderStatus.DONE);
-        order.setContractFile(mediatorDoneOrderDTO.getContractFile());
-        order.setCertImages(mediatorDoneOrderDTO.getCertImages());
-        order.setPaymentBillFile(mediatorDoneOrderDTO.getPaymentBillFile());
-        order.setPayDate(mediatorDoneOrderDTO.getPayDate());
-        order.setDeliveryDate(mediatorDoneOrderDTO.getDeliveryDate());
-        order.setContractSignDate(mediatorDoneOrderDTO.getContractSignDate());
-        orderService.update(orderId, order);
-        return ResponseEntity.ok(order);
+        orderService.doneOrder(orderId, mediatorDoneOrderDTO);
+        return ResponseEntity.ok(orderService.get(orderId));
     }
 
     @GetMapping("/order/{orderId}")
@@ -150,19 +137,14 @@ public class MediatorAuditController {
             @PathVariable(name = "projectId") final Long projectId,
             Authentication authentication) {
         var userId = ((UserUserDetails) authentication.getPrincipal()).getUserId();
-        var project = projectService.get(projectId);
-        project.setStatus(ProjectStatus.APPROVED);
-        project.setAuditBy(userId);
-        projectService.update(projectId, project);
+        projectService.approve(projectId, userId);
         return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/project/{projectId}/reject")
     public ResponseEntity<Void> rejectProject(
             @PathVariable(name = "projectId") final Long projectId) {
-        var project = projectService.get(projectId);
-        project.setStatus(ProjectStatus.REJECTED);
-        projectService.update(projectId, project);
+        projectService.updateStatus(projectId, ProjectStatus.REJECTED);
         return ResponseEntity.ok().build();
     }
 

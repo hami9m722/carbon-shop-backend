@@ -5,6 +5,14 @@ public enum UserStatus {
 
     INIT,
     APPROVED,
-    REJECTED
+    REJECTED,
+    ;
+
+    public boolean canUpdateTo(UserStatus status) {
+        return switch (this) {
+            case INIT -> status == APPROVED || status == REJECTED;
+            default -> false;
+        };
+    }
 
 }

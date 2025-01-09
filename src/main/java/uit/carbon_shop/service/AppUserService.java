@@ -2,6 +2,9 @@ package uit.carbon_shop.service;
 
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
+import lombok.RequiredArgsConstructor;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -28,7 +31,7 @@ import uit.carbon_shop.util.ReferencedWarning;
 
 @Service
 @Transactional
-
+@RequiredArgsConstructor
 public class AppUserService {
 
     private final AppUserRepository appUserRepository;
@@ -40,24 +43,7 @@ public class AppUserService {
     private final AppUserMapper appUserMapper;
     private final OrderRepository orderRepository;
     private final QuestionRepository questionRepository;
-
-    public AppUserService(final AppUserRepository appUserRepository,
-            final CompanyRepository companyRepository, final ProjectRepository projectRepository,
-            final CompanyReviewRepository companyReviewRepository,
-            final ProjectReviewRepository projectReviewRepository,
-            final QuestionRepository questionRepository,
-            final PasswordEncoder passwordEncoder, final AppUserMapper appUserMapper,
-            final OrderRepository orderRepository) {
-        this.appUserRepository = appUserRepository;
-        this.companyRepository = companyRepository;
-        this.projectRepository = projectRepository;
-        this.companyReviewRepository = companyReviewRepository;
-        this.projectReviewRepository = projectReviewRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.appUserMapper = appUserMapper;
-        this.orderRepository = orderRepository;
-        this.questionRepository = questionRepository;
-    }
+    private final RedissonClient redissonClient;
 
     public Page<AppUserDTO> findAll(final String filter, final Pageable pageable) {
         Page<AppUser> page;
@@ -116,20 +102,34 @@ public class AppUserService {
         appUserRepository.save(appUser);
     }
 
+    public void updateStatus(final Long userId, final UserStatus status) {
+        RLock appUserLock = redissonClient.getLock("APP_USER_LOCK:" + userId);
+        appUserLock.lock();
+        try {
+            final AppUser appUser = appUserRepository.findById(userId)
+                    .orElseThrow(NotFoundException::new);
+            if (!appUser.getStatus().canUpdateTo(status)) {
+                throw new IllegalArgumentException(
+                        "Cannot update status from " + appUser.getStatus() + " to " + status);
+            }
+            appUser.setStatus(status);
+            if (status == UserStatus.APPROVED) {
+                appUser.setApprovedAt(LocalDateTime.now());
+            } else if (status == UserStatus.REJECTED) {
+                appUser.setRejectedAt(LocalDateTime.now());
+            }
+            appUserRepository.save(appUser);
+        } finally {
+            appUserLock.unlock();
+        }
+    }
+
     public void approve(final Long userId) {
-        final AppUser appUser = appUserRepository.findById(userId)
-                .orElseThrow(NotFoundException::new);
-        appUser.setApprovedAt(LocalDateTime.now());
-        appUser.setStatus(UserStatus.APPROVED);
-        appUserRepository.save(appUser);
+        updateStatus(userId, UserStatus.APPROVED);
     }
 
     public void reject(final Long userId) {
-        final AppUser appUser = appUserRepository.findById(userId)
-                .orElseThrow(NotFoundException::new);
-        appUser.setRejectedAt(LocalDateTime.now());
-        appUser.setStatus(UserStatus.REJECTED);
-        appUserRepository.save(appUser);
+        updateStatus(userId, UserStatus.REJECTED);
     }
 
     public void delete(final Long userId) {

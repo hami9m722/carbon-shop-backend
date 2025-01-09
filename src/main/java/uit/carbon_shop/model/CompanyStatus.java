@@ -5,6 +5,14 @@ public enum CompanyStatus {
 
     INIT,
     APPROVED,
-    REJECTED
+    REJECTED,
+    ;
+
+    public boolean canUpdateTo(CompanyStatus status) {
+        return switch (this) {
+            case INIT -> status == APPROVED || status == REJECTED;
+            default -> false;
+        };
+    }
 
 }
