@@ -43,15 +43,21 @@ public class RequestResponseLogging extends OncePerRequestFilter {
 
             long duration = System.currentTimeMillis() - startTime;
 
-            log.info("\nREQUEST: [{}] {} \nHeaders: {} \nBody: {} \n" +
-                            "RESPONSE: Status: {} \nHeaders: {} \nBody: {} \nDuration: {}ms",
+//            log.info("\nREQUEST: [{}] {} \nHeaders: {} \nBody: {} \n" +
+//                            "RESPONSE: Status: {} \nHeaders: {} \nBody: {} \nDuration: {}ms",
+//                    request.getMethod(),
+//                    request.getRequestURI(),
+//                    getHeaders(request),
+//                    requestBody,
+//                    response.getStatus(),
+//                    getHeaders(response),
+//                    responseBody,
+//                    duration);
+
+            log.info("\nREQUEST: [{}] {} - RESPONSE: Status: {} \nDuration: {}ms",
                     request.getMethod(),
                     request.getRequestURI(),
-                    getHeaders(request),
-                    requestBody,
                     response.getStatus(),
-                    getHeaders(response),
-                    responseBody,
                     duration);
 
             // Copy content to the original response
