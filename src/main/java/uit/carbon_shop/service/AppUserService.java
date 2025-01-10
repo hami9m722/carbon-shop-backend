@@ -3,6 +3,7 @@ package uit.carbon_shop.service;
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.data.domain.Page;
@@ -32,6 +33,7 @@ import uit.carbon_shop.util.ReferencedWarning;
 @Service
 @Transactional
 @RequiredArgsConstructor
+@Slf4j
 public class AppUserService {
 
     private final AppUserRepository appUserRepository;
@@ -104,7 +106,9 @@ public class AppUserService {
 
     public void updateStatus(final Long userId, final UserStatus status) {
         RLock appUserLock = redissonClient.getLock("APP_USER_LOCK:" + userId);
+        log.info("Start lock key APP_USER_LOCK:{} on threadId={}", userId, Thread.currentThread().threadId());
         appUserLock.lock();
+        log.info("Locked key APP_USER_LOCK:{} on threadId={}", userId, Thread.currentThread().threadId());
         try {
             final AppUser appUser = appUserRepository.findById(userId)
                     .orElseThrow(NotFoundException::new);
@@ -112,6 +116,7 @@ public class AppUserService {
                 throw new IllegalArgumentException(
                         "Cannot update status from " + appUser.getStatus() + " to " + status);
             }
+            randomWait();
             appUser.setStatus(status);
             if (status == UserStatus.APPROVED) {
                 appUser.setApprovedAt(LocalDateTime.now());
@@ -121,6 +126,17 @@ public class AppUserService {
             appUserRepository.save(appUser);
         } finally {
             appUserLock.unlock();
+            log.info("Unlocked key APP_USER_LOCK:{} on threadId={}", userId, Thread.currentThread().threadId());
+        }
+    }
+
+    private void randomWait() {
+        try {
+            double v = 3000 + Math.random() * 5000;
+            log.info("Sleep {}ms", v);
+            Thread.sleep((long) v);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
