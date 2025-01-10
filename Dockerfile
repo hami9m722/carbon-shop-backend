@@ -5,14 +5,13 @@ FROM gradle:8.5-jdk21 AS builder
 WORKDIR /app
 
 # Copy Gradle files
-COPY build.gradle settings.gradle ./
-COPY gradle ./gradle
+COPY . .
 
 # Copy source code
 COPY src ./src
 
 # Build the application
-RUN gradle build --no-daemon
+RUN gradle clean bootJar -x test --no-daemon
 
 # Runtime stage
 FROM eclipse-temurin:21-jre-jammy
