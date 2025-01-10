@@ -1,11 +1,15 @@
 spring:
   datasource:
-    url: ${JDBC_DATABASE_URL:jdbc:postgresql://localhost:5432/carbon-shop}
+    url: ${JDBC_DATABASE_URL:jdbc:postgresql://postgres:5432/carbon-shop}
     username: ${JDBC_DATABASE_USERNAME:postgres}
     password: ${JDBC_DATABASE_PASSWORD:P4ssword!}
     hikari:
       connection-timeout: 30000
       maximum-pool-size: 10
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
   jpa:
     hibernate:
       ddl-auto: update
