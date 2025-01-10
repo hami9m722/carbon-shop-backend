@@ -54,7 +54,7 @@ public class RequestResponseLogging extends OncePerRequestFilter {
 //                    responseBody,
 //                    duration);
 
-            log.info("\nREQUEST: [{}] {} - RESPONSE: Status: {} \nDuration: {}ms",
+            log.info("REQUEST: [{}] {} - RESPONSE: Status: {} Duration: {}ms",
                     request.getMethod(),
                     request.getRequestURI(),
                     response.getStatus(),
