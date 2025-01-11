@@ -123,7 +123,7 @@ public class AppUserService {
             } else if (status == UserStatus.REJECTED) {
                 appUser.setRejectedAt(LocalDateTime.now());
             }
-            appUserRepository.save(appUser);
+            appUserRepository.saveAndFlush(appUser);
         } finally {
             appUserLock.unlock();
             log.info("Unlocked key APP_USER_LOCK:{} on threadId={}", userId, Thread.currentThread().threadId());
