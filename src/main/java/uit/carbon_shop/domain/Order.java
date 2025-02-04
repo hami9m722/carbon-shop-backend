@@ -56,7 +56,7 @@ public class Order {
     @Column
     private Long contractFile;
 
-    @Column(columnDefinition = "jsonb")
+    @Column()
     @JdbcTypeCode(SqlTypes.JSON)
     private List<Long> certImages;
 

@@ -1,0 +1,12 @@
+{
+  "password": "SecureP@ssw0rd123",
+  "name": "John Smith",
+  "phone": "+1-555-123-4567",
+  "email": "john.smith@example.com",
+  "companyName": "Tech Solutions Inc.",
+  "companyAddress": "123 Business Avenue, Suite 100, New York, NY 10001",
+  "companyTaxCode": "12-3456789",
+  "companyIndustry": "Information Technology",
+  "companyPhone": "+1-555-987-6543",
+  "companyEmail": "contact@techsolutions.example.com"
+}

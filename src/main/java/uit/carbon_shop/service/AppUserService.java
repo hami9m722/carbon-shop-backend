@@ -116,7 +116,6 @@ public class AppUserService {
                 throw new IllegalArgumentException(
                         "Cannot update status from " + appUser.getStatus() + " to " + status);
             }
-            randomWait();
             appUser.setStatus(status);
             if (status == UserStatus.APPROVED) {
                 appUser.setApprovedAt(LocalDateTime.now());
@@ -127,16 +126,6 @@ public class AppUserService {
         } finally {
             appUserLock.unlock();
             log.info("Unlocked key APP_USER_LOCK:{} on threadId={}", userId, Thread.currentThread().threadId());
-        }
-    }
-
-    private void randomWait() {
-        try {
-            double v = 3000 + Math.random() * 5000;
-            log.info("Sleep {}ms", v);
-            Thread.sleep((long) v);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
         }
     }
 
