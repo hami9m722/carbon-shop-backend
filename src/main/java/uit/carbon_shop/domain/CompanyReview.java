@@ -41,7 +41,7 @@ public class CompanyReview {
     @Column
     private Integer rate;
 
-    @Column(columnDefinition = "jsonb")
+    @Column()
     @JdbcTypeCode(SqlTypes.JSON)
     private List<Long> images;
 

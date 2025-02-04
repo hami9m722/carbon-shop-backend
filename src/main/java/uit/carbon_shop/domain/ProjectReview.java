@@ -41,7 +41,7 @@ public class ProjectReview {
     @Column
     private Integer rate;
 
-    @Column(columnDefinition = "jsonb")
+    @Column()
     @JdbcTypeCode(SqlTypes.JSON)
     private List<Long> images;
 

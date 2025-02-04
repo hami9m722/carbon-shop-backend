@@ -1,49 +1,34 @@
 package uit.carbon_shop.config;
 
 import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
-import io.restassured.response.Response;
 import jakarta.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 import lombok.SneakyThrows;
-import org.junit.jupiter.api.BeforeEach;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.jdbc.SqlMergeMode;
 import org.springframework.util.StreamUtils;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import uit.carbon_shop.CarbonShopApplication;
-import uit.carbon_shop.repos.AppUserRepository;
-import uit.carbon_shop.repos.CompanyRepository;
-import uit.carbon_shop.repos.CompanyReviewRepository;
-import uit.carbon_shop.repos.FileDocumentRepository;
-import uit.carbon_shop.repos.OrderRepository;
-import uit.carbon_shop.repos.ProjectRepository;
-import uit.carbon_shop.repos.ProjectReviewRepository;
-import uit.carbon_shop.repos.QuestionRepository;
 
 
 /**
- * Abstract base class to be extended by every IT test. Starts the Spring Boot context with a
- * Datasource connected to the Testcontainers Docker instance. The instance is reused for all tests,
- * with all data wiped out before each test.
+ * Abstract base class to be extended by every IT test. Starts the Spring Boot context with a Datasource connected to
+ * the Testcontainers Docker instance. The instance is reused for all tests, with all data wiped out before each test.
  */
 @SpringBootTest(
         classes = CarbonShopApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @ActiveProfiles("it")
-@Sql({"/data/clearAll.sql"})
 @SqlMergeMode(SqlMergeMode.MergeMode.MERGE)
-public abstract class BaseIT {
+public abstract class BaseIntegrationTestByTestContainer {
 
     @ServiceConnection
     private static final PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer("postgres:17.2");
@@ -72,30 +57,6 @@ public abstract class BaseIT {
     @LocalServerPort
     public int serverPort;
 
-    @Autowired
-    public ProjectRepository projectRepository;
-
-    @Autowired
-    public OrderRepository orderRepository;
-
-    @Autowired
-    public CompanyRepository companyRepository;
-
-    @Autowired
-    public AppUserRepository appUserRepository;
-
-    @Autowired
-    public FileDocumentRepository fileDocumentRepository;
-
-    @Autowired
-    public CompanyReviewRepository companyReviewRepository;
-
-    @Autowired
-    public ProjectReviewRepository projectReviewRepository;
-
-    @Autowired
-    public QuestionRepository questionRepository;
-
     @PostConstruct
     public void initRestAssured() {
         RestAssured.port = serverPort;
@@ -115,49 +76,9 @@ public abstract class BaseIT {
         registry.add("spring.data.redis.port", redisContainer::getFirstMappedPort);
     }
 
-    @BeforeEach
-    public void beforeEach() {
-        RestAssured
-                .given()
-                    .accept(ContentType.JSON)
-                .when()
-                    .delete(messagesUrl);
-    }
-
     @SneakyThrows
     public String readResource(final String resourceName) {
         return StreamUtils.copyToString(getClass().getResourceAsStream(resourceName), StandardCharsets.UTF_8);
-    }
-
-    @SneakyThrows
-    public void waitForMessages(final int total) {
-        int loop = 0;
-        while (loop++ < 25) {
-            final Response messagesResponse = RestAssured
-                    .given()
-                        .accept(ContentType.JSON)
-                    .when()
-                        .get(messagesUrl);
-            if (messagesResponse.jsonPath().getInt("total") == total) {
-                return;
-            }
-            Thread.sleep(250);
-        }
-        throw new RuntimeException("Could not find " + total + " messages in time.");
-    }
-
-    public String sellerOrBuyerUserToken() {
-        // user sellerOrBuyer@invalid.bootify.io, expires 2040-01-01
-        return "Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9." +
-                "eyJzdWIiOiJzZWxsZXJPckJ1eWVyQGludmFsaWQuYm9vdGlmeS5pbyIsInJvbGVzIjpbIlNFTExFUl9PUl9CVVlFUiJdLCJpc3MiOiJib290aWZ5IiwiaWF0IjoxNzMwMDEyOTQzLCJleHAiOjIyMDg5ODg4MDB9." +
-                "SWaqt9_3DcPr3_aXUiw_RxZDkz_DRa4Vbtv6DYge-juDSe89THJ3cpdJC8XJu-fiTbh10nDGeDY5HgAiokdmjA";
-    }
-
-    public String mediatorUserToken() {
-        // user mediator@invalid.bootify.io, expires 2040-01-01
-        return "Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9." +
-                "eyJzdWIiOiJtZWRpYXRvckBpbnZhbGlkLmJvb3RpZnkuaW8iLCJyb2xlcyI6WyJNRURJQVRPUiJdLCJpc3MiOiJib290aWZ5IiwiaWF0IjoxNzMwMDEyOTQzLCJleHAiOjIyMDg5ODg4MDB9." +
-                "KCE6MSWDj_vIu5W6g6tx7jZXh5knBtvGNUi4QRz5HFzONKgazWATvKiNCjuixY4vBNKoJdQBnD8ktmaPEBEgqg";
     }
 
 }

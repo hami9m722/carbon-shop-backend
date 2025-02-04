@@ -72,7 +72,7 @@ public class Project {
     @Column
     private String methodPayment;
 
-    @Column(columnDefinition = "jsonb")
+    @Column()
     @JdbcTypeCode(SqlTypes.JSON)
     private List<Long> projectImages;
 
