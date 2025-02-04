@@ -4,9 +4,9 @@ DELETE FROM projects;
 
 DELETE FROM orders;
 
-DELETE FROM companies;
-
 DELETE FROM app_users;
+
+DELETE FROM companies;
 
 DELETE FROM file_documents;
 

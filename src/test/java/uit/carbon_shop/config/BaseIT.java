@@ -41,12 +41,13 @@ import uit.carbon_shop.repos.QuestionRepository;
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @ActiveProfiles("it")
-@Sql({"/data/clearAll.sql", "/data/appUserData.sql"})
+@Sql({"/data/clearAll.sql"})
 @SqlMergeMode(SqlMergeMode.MergeMode.MERGE)
 public abstract class BaseIT {
 
     @ServiceConnection
     private static final PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer("postgres:17.2");
+    private static final GenericContainer<?> redisContainer = new GenericContainer<>("redis:6.2");
     private static final GenericContainer<?> mailpitContainer = new GenericContainer<>("axllent/mailpit:v1.21");
     public static String smtpHost;
     public static Integer smtpPort;
@@ -62,6 +63,10 @@ public abstract class BaseIT {
         smtpHost = mailpitContainer.getHost();
         smtpPort = mailpitContainer.getMappedPort(1025);
         messagesUrl = "http://" + smtpHost + ":" + mailpitContainer.getMappedPort(8025) + "/api/v1/messages";
+
+        redisContainer.withReuse(true)
+                .withExposedPorts(6379)
+                .start();
     }
 
     @LocalServerPort
@@ -105,6 +110,9 @@ public abstract class BaseIT {
         registry.add("spring.mail.properties.mail.smtp.auth", () -> false);
         registry.add("spring.mail.properties.mail.smtp.starttls.enable", () -> false);
         registry.add("spring.mail.properties.mail.smtp.starttls.required", () -> false);
+
+        registry.add("spring.data.redis.host", redisContainer::getHost);
+        registry.add("spring.data.redis.port", redisContainer::getFirstMappedPort);
     }
 
     @BeforeEach
