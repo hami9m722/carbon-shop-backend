@@ -1,51 +1,5 @@
-INSERT INTO app_users (
-    user_id,
-    password,
-    name,
-    phone,
-    email,
-    role,
-    approved_at,
-    rejected_at,
-    status,
-    created_at,
-    updated_at
-) VALUES (
-    1300,
-    '{bcrypt}$2a$10$FMzmOkkfbApEWxS.4XzCKOR7EbbiwzkPEyGgYh6uQiPxurkpzRMa6',
-    'Sed diam voluptua.',
-    'Viverra suspendisse.',
-    'sellerOrBuyer@invalid.bootify.io',
-    'SELLER_OR_BUYER',
-    '2024-05-06 14:30:00',
-    '2024-05-06 14:30:00',
-    'INIT',
-    '2024-09-02 14:30:00',
-    '2024-09-02 14:30:00'
-);
-
-INSERT INTO app_users (
-    user_id,
-    password,
-    name,
-    phone,
-    email,
-    role,
-    approved_at,
-    rejected_at,
-    status,
-    created_at,
-    updated_at
-) VALUES (
-    1301,
-    '{bcrypt}$2a$10$FMzmOkkfbApEWxS.4XzCKOR7EbbiwzkPEyGgYh6uQiPxurkpzRMa6',
-    'At vero eos.',
-    'Nec ullamcorper.',
-    'mediator@invalid.bootify.io',
-    'MEDIATOR',
-    '2024-05-07 14:30:00',
-    '2024-05-07 14:30:00',
-    'INIT',
-    '2024-09-03 14:30:00',
-    '2024-09-03 14:30:00'
-);
+INSERT INTO app_users (id, approved_at, avatar, created_at, email, name, password, phone, rejected_at,
+                              reset_password_start, reset_password_uid, role, status, updated_at, company_id)
+VALUES (-3526081304669431025, null, 972, '2025-01-05 14:52:34.518339 +00:00', 'tg@test.com', 'Dai dien Test',
+        '$2a$10$/RIe8yImUvC/7lrKG8WFn.l87lCh.IHdVk/nhxmhstD7x5xieBsfC', '12d12e', null, null, null, 'MEDIATOR',
+        'APPROVED', '2025-01-05 14:52:34.518998 +00:00', -4153125570511858569);

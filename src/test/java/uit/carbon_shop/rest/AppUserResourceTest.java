@@ -4,25 +4,34 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.restassured.response.Response;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.jdbc.Sql;
 import uit.carbon_shop.config.BaseIT;
 
-
+@Sql({"/data/clearAll.sql", "/data/companyData.sql", "/data/appUserData.sql"})
 public class AppUserResourceTest extends BaseIT {
 
+    private static String mediatorAccessToken = "";
+
     @Test
-    void getAllAppUsers_success() {
-        RestAssured
+    @Order(1)
+    void mediatorAuthenticate() {
+        Response post = RestAssured
                 .given()
                     .accept(ContentType.JSON)
+                    .contentType(ContentType.JSON)
+                    .body(readResource("/requests/mediator_authenticate.json"))
                 .when()
-                    .get("/api/appUsers")
-                .then()
-                    .statusCode(HttpStatus.OK.value())
-                    .body("page.totalElements", Matchers.equalTo(2))
-                    .body("content.get(0).userId", Matchers.equalTo(1300));
+                    .post("/authenticate");
+        post.then()
+                .statusCode(HttpStatus.OK.value())
+                .body("accessToken", Matchers.notNullValue());
+
+        mediatorAccessToken = post.jsonPath().getString("accessToken");
     }
 
     @Test
@@ -68,7 +77,7 @@ public class AppUserResourceTest extends BaseIT {
                 .given()
                     .accept(ContentType.JSON)
                     .contentType(ContentType.JSON)
-                    .body(readResource("/requests/appUserDTORequest.json"))
+                    .body(readResource("/requests/mediator_authenticate.json"))
                 .when()
                     .post("/api/appUsers")
                 .then()
@@ -98,7 +107,7 @@ public class AppUserResourceTest extends BaseIT {
                 .given()
                     .accept(ContentType.JSON)
                     .contentType(ContentType.JSON)
-                    .body(readResource("/requests/appUserDTORequest.json"))
+                    .body(readResource("/requests/mediator_authenticate.json"))
                 .when()
                     .put("/api/appUsers/1300")
                 .then()
